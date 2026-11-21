@@ -71,6 +71,7 @@ fi
 codesign --force --sign "$identity" --keychain "$kc" --entitlements "$out/ent-app.plist" "$app"
 codesign --verify --deep --strict --verbose=1 "$app"
 "$here/scripts/wellsstar/check-signed.sh" "$app"
+[ ! -e "$out/ABS.ipa" ] || mv "$out/ABS.ipa" "$out/ABS.ipa.old.$$"  # zip adds to an existing archive
 (cd "$out/ipa" && zip -qry ../ABS.ipa Payload)
 echo "built $out/ABS.ipa (build $build)"
 [ $upload = 1 ] || exit 0
