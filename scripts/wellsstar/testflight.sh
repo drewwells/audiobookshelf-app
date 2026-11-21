@@ -45,6 +45,9 @@ mkdir -p "$out/ipa/Payload"
 cp -R "$out/App.xcarchive/Products/Applications/Audiobookshelf.app" "$out/ipa/Payload/"
 app=$out/ipa/Payload/Audiobookshelf.app
 watch=$app/Watch/ABSWatch.app
+# The watch app (watch/, drewwells/abs-watch), built for a real watch and put where Xcode's "Embed Watch
+# Content" puts it, with the same build number.
+"$here/watch/scripts/build.sh" "$build" "$app/Watch"
 cp "$prof" "$app/embedded.mobileprovision"
 ent() {  # profile entitlements -> plist, keychain group narrowed to the app's own id
     security cms -D -i "$1" | plutil -extract Entitlements xml1 -o "$2" -

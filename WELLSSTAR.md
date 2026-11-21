@@ -9,7 +9,10 @@ from [drewwells/abs-watch](https://github.com/drewwells/abs-watch)). Server: `ht
 3. Simulator: `xcodebuild -workspace ios/App/App.xcworkspace -scheme App -destination 'platform=iOS Simulator,name=iPhone 17'
    CODE_SIGNING_ALLOWED=NO IPHONEOS_DEPLOYMENT_TARGET=15.0 build`. Pass the deployment target: the pods ask for 14.0,
    which Xcode 27 refuses.
-4. TestFlight: `scripts/wellsstar/testflight.sh` archives unsigned, signs every Mach-O by hand with the Apple
+4. Watch app: `git submodule update --init` (watch/ = drewwells/abs-watch). testflight.sh builds it with
+   `watch/scripts/build.sh` (arm64 + arm64_32, watchOS 10+) and puts it in `Audiobookshelf.app/Watch/`, as Xcode's
+   "Embed Watch Content" would, before signing; one .ipa carries both apps.
+5. TestFlight: `scripts/wellsstar/testflight.sh` archives unsigned, signs every Mach-O by hand with the Apple
    Distribution identity in `~/Library/Keychains/deej-signing.keychain-db` and the App Store profiles in
    `~/.config/abs-signing/`, uploads with `altool` and the App Store Connect API key, and gives the build to the
    internal group "abs internal" (`scripts/wellsstar/asc.py`). Profiles: `scripts/wellsstar/provision.sh`.
