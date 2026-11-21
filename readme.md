@@ -1,3 +1,12 @@
+> **NOTICE: this is a fork.** drewwells/audiobookshelf-app is a fork of
+> [advplyr/audiobookshelf-app](https://github.com/advplyr/audiobookshelf-app) by advplyr and the Audiobookshelf
+> contributors, distributed under the same license (GNU GPL v3, see [LICENSE](LICENSE)). All credit for the app goes
+> to the upstream project. The fork's changes (branch `wellsstar`): its own bundle id (`dev.wellsstar.abs`) and name
+> ("ABS Fork") so it installs beside the official app, UIScene adoption (iOS 27 won't launch an app without it), an
+> iOS 15 minimum (Xcode 27's floor), and an embedded Apple Watch app (`watch/`, from drewwells/abs-watch). It is
+> built for one household's server (an Audiobookshelf-compatible API) and handed out through TestFlight only.
+> Build steps: [WELLSSTAR.md](WELLSSTAR.md).
+
 # Audiobookshelf Mobile App
 
 Audiobookshelf is a self-hosted audiobook and podcast server.

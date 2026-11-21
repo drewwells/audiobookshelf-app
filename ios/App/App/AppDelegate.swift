@@ -5,7 +5,8 @@ import RealmSwift
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-    lazy var window: UIWindow? = UIWindow(frame: UIScreen.main.bounds)
+    // Scenes own the window (UIApplicationSceneManifest in Info.plist; iOS 27 requires UIScene).
+    var window: UIWindow?
     var backgroundCompletionHandler: (() -> Void)?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
@@ -130,3 +131,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 }
 
+// iOS 27 stops launching apps that don't adopt UIScene. UIKit builds this scene's window from
+// Main.storyboard (UISceneStoryboardFile); URL opens and user activities go on to Capacitor as before.
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+    var window: UIWindow?
+
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        for context in connectionOptions.urlContexts {
+            _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, open: context.url, options: [:])
+        }
+        for activity in connectionOptions.userActivities {
+            _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, continue: activity, restorationHandler: { _ in })
+        }
+    }
+
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        for context in URLContexts {
+            _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, open: context.url, options: [:])
+        }
+    }
+
+    func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        _ = ApplicationDelegateProxy.shared.application(UIApplication.shared, continue: userActivity, restorationHandler: { _ in })
+    }
+}
