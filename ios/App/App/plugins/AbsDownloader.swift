@@ -73,13 +73,7 @@ public class AbsDownloader: CAPPlugin, CAPBridgedPlugin, URLSessionDownloadDeleg
                 throw LibraryItemDownloadError.downloadItemPartNotFound
             }
 
-            try realm.write {
-                liveDownloadItemPart.bytesDownloaded = liveDownloadItemPart.fileSize
-                liveDownloadItemPart.progress = 100
-                liveDownloadItemPart.completed = true
-            }
-            AbsLogger.info(message: "Download completed for \(liveDownloadItemPart.filename ?? partId)")
-            
+            let name = liveDownloadItemPart.filename ?? partId
             do {
                 // Move the downloaded file into place
                 guard let destinationUrl = liveDownloadItemPart.destinationURL else {
@@ -87,16 +81,25 @@ public class AbsDownloader: CAPPlugin, CAPBridgedPlugin, URLSessionDownloadDeleg
                 }
                 try? FileManager.default.removeItem(at: destinationUrl)
                 try FileManager.default.moveItem(at: location, to: destinationUrl)
-                try realm.write {
-                    liveDownloadItemPart.moved = true
-                }
-                AbsLogger.info(message: "Move completed for \(liveDownloadItemPart.filename ?? partId) to \(destinationUrl.path)")
+                AbsLogger.info(message: "Move completed for \(name) to \(destinationUrl.path)")
             } catch {
                 try realm.write {
+                    liveDownloadItemPart.completed = true
                     liveDownloadItemPart.failed = true
                 }
                 throw error
             }
+            // Completed only once the file is in place, and in one write: the progress timer (main thread) deletes
+            // the download item as soon as every part is completed. Marking it completed before the move let that
+            // delete land between two writes here, and the second write on a deleted part aborted the app when a
+            // background download's completions arrived together on resume.
+            try realm.write {
+                liveDownloadItemPart.bytesDownloaded = liveDownloadItemPart.fileSize
+                liveDownloadItemPart.progress = 100
+                liveDownloadItemPart.completed = true
+                liveDownloadItemPart.moved = true
+            }
+            AbsLogger.info(message: "Download completed for \(name)")
         }
     }
     
@@ -176,12 +179,22 @@ public class AbsDownloader: CAPPlugin, CAPBridgedPlugin, URLSessionDownloadDeleg
             // Call the progress handler
             do {
                 try progressHandler(downloadItem, part)
-                try? self.notifyListeners("onDownloadItemPartUpdate", data: part.asDictionary())
+                // The handler's write moves this thread's Realm to the latest version, where the progress timer
+                // (main thread) may already have deleted the finished item. Reading a deleted object raises an
+                // Objective-C exception that `try?` can't catch: it aborted the app when a background download's
+                // completions arrived together on resume.
+                if !part.isInvalidated {
+                    try? self.notifyListeners("onDownloadItemPartUpdate", data: part.asDictionary())
+                }
             } catch {
                 AbsLogger.error(message: "Error while processing progress")
                 debugPrint(error)
             }
-            
+
+            guard !downloadItem.isInvalidated else {
+                AbsLogger.info(message: "Download item for \(downloadItemPartId) already finished and removed")
+                return
+            }
             // Update the progress
             downloadItem = downloadItem.freeze()
             self.progressStatusQueue.async(flags: .barrier) {
