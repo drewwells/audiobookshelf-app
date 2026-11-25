@@ -37,10 +37,12 @@ fi
 mkdir -p "$out"
 [ ! -e "$out/App.xcarchive" ] || mv "$out/App.xcarchive" "$out/App.xcarchive.old.$$"
 [ ! -e "$out/ipa" ] || mv "$out/ipa" "$out/ipa.old.$$"
-# Xcode 27 builds iOS 15 at the least; the pods ask for 14.
+# Xcode 27 builds iOS 15 at the least; the pods ask for 14. -disable-sandbox: swift-plugin-server cannot
+# start its own sandbox inside an agent shell ("produced malformed response").
 xcodebuild -workspace "$ios/App.xcworkspace" -scheme App -configuration Release \
     -destination generic/platform=iOS -derivedDataPath "$out/dd" -archivePath "$out/App.xcarchive" \
-    CODE_SIGNING_ALLOWED=NO IPHONEOS_DEPLOYMENT_TARGET=15.0 CURRENT_PROJECT_VERSION="$build" archive -quiet
+    CODE_SIGNING_ALLOWED=NO IPHONEOS_DEPLOYMENT_TARGET=15.0 OTHER_SWIFT_FLAGS='$(inherited) -disable-sandbox' \
+    CURRENT_PROJECT_VERSION="$build" archive -quiet
 mkdir -p "$out/ipa/Payload"
 cp -R "$out/App.xcarchive/Products/Applications/Audiobookshelf.app" "$out/ipa/Payload/"
 app=$out/ipa/Payload/Audiobookshelf.app
