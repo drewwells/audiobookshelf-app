@@ -91,3 +91,5 @@ sw.*
 
 /resources/
 /android/app/release/
+# Python bytecode (scripts/wellsstar)
+__pycache__/
